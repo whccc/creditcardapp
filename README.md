@@ -24,7 +24,6 @@ Navegador ──► Frontend (React) ──/api──► BFF (.NET 8) ──HTTP
 10. [Pruebas](#10-pruebas)
 11. [Cómo escala](#11-cómo-escala)
 12. [Limitaciones y siguientes pasos](#12-limitaciones-y-siguientes-pasos)
-13. [Glosario](#13-glosario)
 
 ---
 
