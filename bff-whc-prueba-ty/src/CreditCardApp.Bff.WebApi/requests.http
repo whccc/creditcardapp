@@ -1,0 +1,141 @@
+@baseUrl = http://localhost:5080
+@email = demo@creditcard.app
+@password = Demo1234!
+
+### Health check del BFF (fuera de /api: no exige X-CSRF)
+GET {{baseUrl}}/health
+
+### Sin header X-CSRF -> 403 (code: Bff.CsrfHeaderMissing)
+GET {{baseUrl}}/api/v1/auth/session
+
+### Login: el BFF abre la sesión en la cookie HttpOnly "ccapp.session". El JSON no trae token.
+POST {{baseUrl}}/api/v1/auth/login
+X-CSRF: 1
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Login inválido -> 401 reenviado desde el core (code: Auth.InvalidCredentials)
+POST {{baseUrl}}/api/v1/auth/login
+X-CSRF: 1
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "incorrecta"
+}
+
+### Sesión actual (usuario + expiración) usando la cookie
+GET {{baseUrl}}/api/v1/auth/session
+X-CSRF: 1
+
+### Dashboard: el BFF llama en paralelo a /users/me y /cards del core y arma el resumen
+GET {{baseUrl}}/api/v1/dashboard
+X-CSRF: 1
+
+### Listar tarjetas (maskedNumber, expiry "MM/AA", utilizationPercentage)
+# @name cards
+GET {{baseUrl}}/api/v1/cards
+X-CSRF: 1
+
+###
+@firstCardId = {{cards.response.body.$[0].id}}
+
+### Obtener una tarjeta
+GET {{baseUrl}}/api/v1/cards/{{firstCardId}}
+X-CSRF: 1
+
+### Crear tarjeta (Visa de prueba que pasa Luhn)
+# @name createCard
+POST {{baseUrl}}/api/v1/cards
+X-CSRF: 1
+Content-Type: application/json
+
+{
+  "cardNumber": "4012 8888 8888 1881",
+  "holderName": "Usuario Demo",
+  "nickname": "Tarjeta de prueba",
+  "expiryMonth": 12,
+  "expiryYear": 2029,
+  "creditLimit": 2500
+}
+
+###
+@newCardId = {{createCard.response.body.$.id}}
+
+### Crear tarjeta con número inválido -> 400 reenviado desde el core (code: Card.InvalidNumber)
+POST {{baseUrl}}/api/v1/cards
+X-CSRF: 1
+Content-Type: application/json
+
+{
+  "cardNumber": "4111 1111 1111 1112",
+  "holderName": "Usuario Demo",
+  "expiryMonth": 12,
+  "expiryYear": 2029,
+  "creditLimit": 1000
+}
+
+### Actualizar titular, alias y cupo
+PUT {{baseUrl}}/api/v1/cards/{{newCardId}}
+X-CSRF: 1
+Content-Type: application/json
+
+{
+  "holderName": "Usuario Demo",
+  "nickname": "Supermercado",
+  "creditLimit": 3000
+}
+
+### Pago aprobado
+POST {{baseUrl}}/api/v1/payments
+X-CSRF: 1
+Content-Type: application/json
+
+{
+  "cardId": "{{newCardId}}",
+  "amount": 125.50,
+  "merchant": "Supermercado Central"
+}
+
+### Pago rechazado por cupo insuficiente (status "declined" + declineReason)
+POST {{baseUrl}}/api/v1/payments
+X-CSRF: 1
+Content-Type: application/json
+
+{
+  "cardId": "{{newCardId}}",
+  "amount": 99999,
+  "merchant": "Concesionaria"
+}
+
+### Bloquear tarjeta
+POST {{baseUrl}}/api/v1/cards/{{newCardId}}/block
+X-CSRF: 1
+
+### Desbloquear tarjeta
+POST {{baseUrl}}/api/v1/cards/{{newCardId}}/unblock
+X-CSRF: 1
+
+### Historial de pagos (paginado, con hasPreviousPage / hasNextPage)
+GET {{baseUrl}}/api/v1/payments?page=1&pageSize=10
+X-CSRF: 1
+
+### Historial filtrado por tarjeta
+GET {{baseUrl}}/api/v1/payments?cardId={{newCardId}}&page=1&pageSize=5
+X-CSRF: 1
+
+### Eliminar tarjeta (el historial de pagos se conserva)
+DELETE {{baseUrl}}/api/v1/cards/{{newCardId}}
+X-CSRF: 1
+
+### Cerrar sesión (borra la cookie)
+POST {{baseUrl}}/api/v1/auth/logout
+X-CSRF: 1
+
+### Después del logout -> 401
+GET {{baseUrl}}/api/v1/dashboard
+X-CSRF: 1

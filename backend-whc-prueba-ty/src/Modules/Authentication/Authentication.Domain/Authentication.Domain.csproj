@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>CreditCardApp.Modules.Authentication.Domain</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\CreditCardApp.SharedKernel\CreditCardApp.SharedKernel.csproj" />
+  </ItemGroup>
+
+</Project>

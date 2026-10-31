@@ -1,0 +1,131 @@
+@baseUrl = http://localhost:5100
+@email = demo@creditcard.app
+@password = Demo1234!
+
+### Health check
+GET {{baseUrl}}/health
+
+### Login con el usuario demo (seed)
+# @name login
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+###
+@token = {{login.response.body.$.accessToken}}
+
+### Login inválido -> 401 ProblemDetails (code: Auth.InvalidCredentials)
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "incorrecta"
+}
+
+### Usuario dueño del token
+GET {{baseUrl}}/api/v1/users/me
+Authorization: Bearer {{token}}
+
+### Endpoint protegido sin token -> 401
+GET {{baseUrl}}/api/v1/cards
+
+### Listar tarjetas (DTO del módulo: brand "Visa", status "Active", sin enmascarar)
+# @name cards
+GET {{baseUrl}}/api/v1/cards
+Authorization: Bearer {{token}}
+
+###
+@firstCardId = {{cards.response.body.$[0].id}}
+
+### Obtener una tarjeta
+GET {{baseUrl}}/api/v1/cards/{{firstCardId}}
+Authorization: Bearer {{token}}
+
+### Crear tarjeta (Visa de prueba que pasa Luhn)
+# @name createCard
+POST {{baseUrl}}/api/v1/cards
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "cardNumber": "4012 8888 8888 1881",
+  "holderName": "Usuario Demo",
+  "nickname": "Tarjeta de prueba",
+  "expiryMonth": 12,
+  "expiryYear": 2029,
+  "creditLimit": 2500
+}
+
+###
+@newCardId = {{createCard.response.body.$.id}}
+
+### Crear tarjeta con número inválido -> 400 (code: Card.InvalidNumber)
+POST {{baseUrl}}/api/v1/cards
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "cardNumber": "4111 1111 1111 1112",
+  "holderName": "Usuario Demo",
+  "expiryMonth": 12,
+  "expiryYear": 2029,
+  "creditLimit": 1000
+}
+
+### Actualizar titular, alias y cupo
+PUT {{baseUrl}}/api/v1/cards/{{newCardId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "holderName": "Usuario Demo",
+  "nickname": "Supermercado",
+  "creditLimit": 3000
+}
+
+### Pago aprobado
+POST {{baseUrl}}/api/v1/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "cardId": "{{newCardId}}",
+  "amount": 125.50,
+  "merchant": "Supermercado Central"
+}
+
+### Pago rechazado por cupo insuficiente (se registra con status "Declined")
+POST {{baseUrl}}/api/v1/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "cardId": "{{newCardId}}",
+  "amount": 99999,
+  "merchant": "Concesionaria"
+}
+
+### Bloquear tarjeta
+POST {{baseUrl}}/api/v1/cards/{{newCardId}}/block
+Authorization: Bearer {{token}}
+
+### Desbloquear tarjeta
+POST {{baseUrl}}/api/v1/cards/{{newCardId}}/unblock
+Authorization: Bearer {{token}}
+
+### Historial de pagos (paginado)
+GET {{baseUrl}}/api/v1/payments?page=1&pageSize=10
+Authorization: Bearer {{token}}
+
+### Historial filtrado por tarjeta
+GET {{baseUrl}}/api/v1/payments?cardId={{newCardId}}&page=1&pageSize=5
+Authorization: Bearer {{token}}
+
+### Eliminar tarjeta (el historial de pagos se conserva)
+DELETE {{baseUrl}}/api/v1/cards/{{newCardId}}
+Authorization: Bearer {{token}}
