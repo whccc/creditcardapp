@@ -641,5 +641,12 @@ cd frontend-whc-prueba-ty && npm run lint && npm run build
 
 ---
 
+## Autor
+
+Desarrollado por **Wilson Castro**  
+*Full Stack Software Engineer*  
+- [GitHub](https://github.com/whccc)  
+- [LinkedIn](https://www.linkedin.com/in/wilson-herney-castro-cabrera-73560a19a/)
+
 
 
