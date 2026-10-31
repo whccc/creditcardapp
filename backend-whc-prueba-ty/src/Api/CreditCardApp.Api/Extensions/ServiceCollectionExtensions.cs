@@ -22,7 +22,7 @@ internal static class ServiceCollectionExtensions
     public static IServiceCollection AddApplicationModules(this IServiceCollection services, IConfiguration configuration) =>
         services
             .AddAuthenticationModule(configuration)
-            .AddCardsModule(configuration)
+            .AddCardsModule<PaymentsActivityGateway>(configuration)
             .AddPaymentsModule<CardsChargeGateway>(configuration);
 
     public static IServiceCollection AddDemoDataSeeding(this IServiceCollection services, IConfiguration configuration)

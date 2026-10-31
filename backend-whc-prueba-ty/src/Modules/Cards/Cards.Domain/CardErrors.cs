@@ -40,6 +40,9 @@ public static class CardErrors
     public static readonly Error InsufficientCredit =
         Error.BusinessRule("Card.InsufficientCredit", "Cupo disponible insuficiente.");
 
+    public static readonly Error HasRecentPayments =
+        Error.BusinessRule("Card.HasRecentPayments", $"No se puede eliminar una tarjeta con pagos aprobados en los últimos {CardDeletionPolicy.RecentPaymentWindow.Days} días.");
+
     public static readonly Error NotFound =
         Error.NotFound("Card.NotFound", "La tarjeta no existe.");
 

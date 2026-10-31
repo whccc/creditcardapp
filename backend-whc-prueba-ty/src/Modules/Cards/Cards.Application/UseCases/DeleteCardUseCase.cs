@@ -5,7 +5,10 @@ using CreditCardApp.SharedKernel.Results;
 
 namespace CreditCardApp.Modules.Cards.Application.UseCases;
 
-internal sealed class DeleteCardUseCase(ICardRepository cards) : IDeleteCardUseCase
+internal sealed class DeleteCardUseCase(
+    ICardRepository cards,
+    ICardPaymentActivity paymentActivity,
+    TimeProvider timeProvider) : IDeleteCardUseCase
 {
     public async Task<Result> ExecuteAsync(Guid ownerId, Guid cardId, CancellationToken cancellationToken = default)
     {
@@ -13,6 +16,12 @@ internal sealed class DeleteCardUseCase(ICardRepository cards) : IDeleteCardUseC
         if (card is null)
         {
             return CardErrors.NotFound;
+        }
+
+        var since = CardDeletionPolicy.RecentPaymentsSince(timeProvider.GetUtcNow());
+        if (await paymentActivity.HasApprovedPaymentsSinceAsync(ownerId, cardId, since, cancellationToken))
+        {
+            return CardErrors.HasRecentPayments;
         }
 
         cards.Remove(card);

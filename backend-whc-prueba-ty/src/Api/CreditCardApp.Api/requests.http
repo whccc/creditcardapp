@@ -126,6 +126,28 @@ Authorization: Bearer {{token}}
 GET {{baseUrl}}/api/v1/payments?cardId={{newCardId}}&page=1&pageSize=5
 Authorization: Bearer {{token}}
 
-### Eliminar tarjeta (el historial de pagos se conserva)
+### Eliminar tarjeta con pagos aprobados en los últimos 30 días -> 422 (code: Card.HasRecentPayments)
 DELETE {{baseUrl}}/api/v1/cards/{{newCardId}}
+Authorization: Bearer {{token}}
+
+### Crear una tarjeta sin pagos para poder eliminarla
+# @name disposableCard
+POST {{baseUrl}}/api/v1/cards
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "cardNumber": "5105 1051 0510 5100",
+  "holderName": "Usuario Demo",
+  "nickname": "Desechable",
+  "expiryMonth": 6,
+  "expiryYear": 2029,
+  "creditLimit": 500
+}
+
+###
+@disposableCardId = {{disposableCard.response.body.$.id}}
+
+### Eliminar tarjeta sin pagos recientes -> 204
+DELETE {{baseUrl}}/api/v1/cards/{{disposableCardId}}
 Authorization: Bearer {{token}}

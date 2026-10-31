@@ -13,5 +13,7 @@ public interface IPaymentRepository
         int take,
         CancellationToken cancellationToken);
 
+    Task<bool> HasApprovedPaymentsSinceAsync(Guid userId, Guid cardId, DateTimeOffset since, CancellationToken cancellationToken);
+
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

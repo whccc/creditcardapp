@@ -32,5 +32,13 @@ internal sealed class PaymentRepository(PaymentsDbContext dbContext) : IPaymentR
         return (items, totalCount);
     }
 
+    public Task<bool> HasApprovedPaymentsSinceAsync(Guid userId, Guid cardId, DateTimeOffset since, CancellationToken cancellationToken) =>
+        dbContext.Payments.AnyAsync(
+            payment => payment.UserId == userId
+                && payment.CardId == cardId
+                && payment.Status == PaymentStatus.Approved
+                && payment.CreatedAt >= since,
+            cancellationToken);
+
     public Task SaveChangesAsync(CancellationToken cancellationToken) => dbContext.SaveChangesAsync(cancellationToken);
 }

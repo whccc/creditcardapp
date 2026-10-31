@@ -33,7 +33,7 @@ Navegador ──► Frontend (React) ──/api──► BFF (.NET 8) ──HTTP
 | Funcionalidad | Detalle |
 |---|---|
 | **Login** | Con correo y contraseña. La sesión se mantiene en una cookie segura |
-| **Tarjetas** | Crear (valida el número con el algoritmo de Luhn y detecta Visa, Mastercard o American Express), editar titular, alias y cupo, bloquear/desbloquear y eliminar |
+| **Tarjetas** | Crear (valida el número con el algoritmo de Luhn y detecta Visa, Mastercard o American Express), editar titular, alias y cupo, bloquear/desbloquear y eliminar. No se puede eliminar una tarjeta con pagos aprobados en los últimos 30 días |
 | **Pagos** | Pagar con una tarjeta. Se rechaza si no hay cupo, si está bloqueada o si está vencida, y el pago rechazado queda registrado con el motivo |
 | **Historial** | Paginado y filtrable por tarjeta |
 | **Dashboard** | Resumen de cupo total, disponible, utilizado y tarjetas activas o bloqueadas |
@@ -49,6 +49,7 @@ Al iniciar se crean **datos de demostración**:
   - Mastercard `5555 5555 5555 4444` (queda **bloqueada**)
   - American Express `3782 822463 10005`
 - **Pagos:** 7 de ejemplo, uno de ellos **rechazado** por cupo insuficiente.
+- Las 3 tarjetas de demo tienen pagos aprobados recién creados, así que **no se pueden eliminar** durante 30 días. Para probar la eliminación, crea una tarjeta nueva.
 
 ---
 
@@ -266,7 +267,7 @@ backend-whc-prueba-ty/
 │   ├── Api/CreditCardApp.Api/             # El ejecutable: API REST que consume el BFF
 │   │   ├── Controllers/                   # Auth, Users, Cards, Payments (+ ApiControllerBase)
 │   │   ├── Contracts/                     # Cuerpos de entrada (LoginRequest, CreateCardRequest, …)
-│   │   ├── Integration/                   # Puente entre módulos (CardsChargeGateway)
+│   │   ├── Integration/                   # Puentes entre módulos (CardsChargeGateway, PaymentsActivityGateway)
 │   │   ├── Http/                          # Errores → ProblemDetails, userId desde el JWT
 │   │   ├── Seeding/                       # Datos demo
 │   │   ├── Extensions/                    # Registro de módulos, JWT, Swagger, SQLite
@@ -329,7 +330,7 @@ Api/Controllers/CardsController.cs           recibe el JSON y toma el userId del
 Program.cs
  └─ AddApplicationModules()
      ├─ AddAuthenticationModule() ─► AddAuthenticationApplication()
-     ├─ AddCardsModule()          ─► AddCardsApplication()   (registra ICreateCardUseCase → CreateCardUseCase, …)
+     ├─ AddCardsModule<PaymentsActivityGateway>() ─► AddCardsApplication()   (registra ICreateCardUseCase → CreateCardUseCase, …)
      └─ AddPaymentsModule<CardsChargeGateway>() ─► AddPaymentsApplication()
 ```
 
@@ -342,6 +343,22 @@ Payments necesita cobrar en una tarjeta, pero **no referencia al módulo Cards**
 1. Payments declara su propio puerto de salida, `ICardChargeGateway`: "necesito cobrar en una tarjeta".
 2. El ejecutable (`Integration/CardsChargeGateway.cs`) lo implementa llamando a los casos de uso de Cards.
 3. Si Cards rechaza por una regla de negocio (sin cupo, bloqueada, vencida), el pago se registra como **rechazado** con el motivo. Si es otro error (tarjeta inexistente), el error se devuelve tal cual.
+
+El mismo patrón funciona en la dirección contraria. La regla "no se puede eliminar una tarjeta con pagos aprobados en los últimos 30 días" involucra a las dos entidades:
+
+1. **Cards es el dueño de la regla**, porque decide si una tarjeta se puede eliminar. La ventana de 30 días vive en su dominio (`CardDeletionPolicy`) y el error en `CardErrors.HasRecentPayments`.
+2. Cards declara la pregunta que necesita responder con un puerto de salida, `ICardPaymentActivity`: "¿esta tarjeta tuvo pagos aprobados desde tal fecha?".
+3. **Payments responde con sus propios datos** mediante un puerto de entrada, `IPaymentActivityQuery`, que consulta `payments.db`.
+4. **El ejecutable conecta ambos** con `Integration/PaymentsActivityGateway.cs`, y se registra con `AddCardsModule<PaymentsActivityGateway>()`.
+
+```
+DELETE /api/v1/cards/{id}
+  → DeleteCardUseCase (Cards)
+      → ICardPaymentActivity ─► PaymentsActivityGateway (Api) ─► IPaymentActivityQuery (Payments) → payments.db
+  ← 422 Card.HasRecentPayments   o   204 si no hubo pagos aprobados
+```
+
+Ningún módulo referencia al otro, y las pruebas de arquitectura lo siguen verificando.
 
 ### 5.6 Datos (SQLite)
 
@@ -609,7 +626,7 @@ cd frontend-whc-prueba-ty && npm run lint && npm run build
 | Proyecto | Qué verifica |
 |---|---|
 | Core · `CreditCardApp.UnitTests` | Reglas de dominio (Luhn, marcas, vencimiento, cupo, bloqueo), casos de uso con dobles de prueba, y **reglas de arquitectura** (que ninguna capa ni módulo rompa sus fronteras) |
-| Core · `CreditCardApp.Api.IntegrationTests` | La API real con bases temporales: login, 401 sin token, ciclo de vida de una tarjeta, pagos aprobados y rechazados, historial, tarjetas ajenas, validaciones |
+| Core · `CreditCardApp.Api.IntegrationTests` | La API real con bases temporales: login, 401 sin token, ciclo de vida de una tarjeta, pagos aprobados y rechazados, eliminación bloqueada por pagos recientes, historial, tarjetas ajenas, validaciones |
 | BFF · `CreditCardApp.Bff.Tests` | Contra un **core simulado**: la cookie es `HttpOnly`/`Secure`/`SameSite` y nunca contiene el token; 403 sin `X-CSRF`; 401 sin sesión; el JWT de la cookie llega al core; los pagos no se reintentan y las lecturas sí; 502 y 503 cuando el core falla; mapeos de formato |
 | Frontend | Verificación de tipos estricta y ESLint |
 

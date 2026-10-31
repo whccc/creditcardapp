@@ -13,3 +13,8 @@ public interface IGetPaymentHistoryUseCase
 {
     Task<Result<PagedResult<PaymentDto>>> ExecuteAsync(PaymentHistoryQuery query, CancellationToken cancellationToken = default);
 }
+
+public interface IPaymentActivityQuery
+{
+    Task<bool> HasApprovedPaymentsSinceAsync(Guid userId, Guid cardId, DateTimeOffset since, CancellationToken cancellationToken = default);
+}

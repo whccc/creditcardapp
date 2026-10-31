@@ -13,6 +13,7 @@ public static class PaymentsApplication
 
         services.AddScoped<IProcessPaymentUseCase, ProcessPaymentUseCase>();
         services.AddScoped<IGetPaymentHistoryUseCase, GetPaymentHistoryUseCase>();
+        services.AddScoped<IPaymentActivityQuery, PaymentActivityQuery>();
 
         return services;
     }

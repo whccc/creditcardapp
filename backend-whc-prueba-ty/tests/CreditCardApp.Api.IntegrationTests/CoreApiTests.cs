@@ -153,6 +153,34 @@ public sealed class CoreApiTests(CoreApiFactory factory) : IClassFixture<CoreApi
     }
 
     [Fact]
+    public async Task DeleteCard_WithRecentApprovedPayment_Returns422AndKeepsTheCard()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var cardId = await CreateCardAsync(client, creditLimit: 100m);
+        var payment = await client.PostAsJsonAsync("/api/v1/payments", new { cardId, amount = 10m, merchant = "Cafetería" });
+        Assert.Equal("Approved", (await ReadJsonAsync(payment)).GetProperty("status").GetString());
+
+        var deleted = await client.DeleteAsync($"/api/v1/cards/{cardId}");
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, deleted.StatusCode);
+        Assert.Equal("Card.HasRecentPayments", (await ReadJsonAsync(deleted)).GetProperty("code").GetString());
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/api/v1/cards/{cardId}")).StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteCard_WithOnlyDeclinedPayments_Returns204()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var cardId = await CreateCardAsync(client, creditLimit: 100m);
+        var payment = await client.PostAsJsonAsync("/api/v1/payments", new { cardId, amount = 500m, merchant = "Librería" });
+        Assert.Equal("Declined", (await ReadJsonAsync(payment)).GetProperty("status").GetString());
+
+        var deleted = await client.DeleteAsync($"/api/v1/cards/{cardId}");
+
+        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+    }
+
+    [Fact]
     public async Task Payment_OnAnotherUsersOrUnknownCard_Returns404()
     {
         var client = await CreateAuthenticatedClientAsync();

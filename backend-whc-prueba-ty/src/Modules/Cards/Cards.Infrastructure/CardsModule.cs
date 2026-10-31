@@ -12,7 +12,8 @@ public static class CardsModule
 {
     public const string ConnectionStringName = "Cards";
 
-    public static IServiceCollection AddCardsModule(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddCardsModule<TCardPaymentActivity>(this IServiceCollection services, IConfiguration configuration)
+        where TCardPaymentActivity : class, ICardPaymentActivity
     {
         services.AddCardsApplication();
 
@@ -26,6 +27,7 @@ public static class CardsModule
                 ?? throw new InvalidOperationException($"Connection string '{ConnectionStringName}' is not configured.")));
 
         services.AddScoped<ICardRepository, CardRepository>();
+        services.AddScoped<ICardPaymentActivity, TCardPaymentActivity>();
 
         services.AddScoped<IModuleInitializer, CardsDatabaseInitializer>();
 

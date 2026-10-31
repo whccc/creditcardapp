@@ -101,6 +101,13 @@ public sealed class ProcessPaymentUseCaseTests
             CancellationToken cancellationToken) =>
             Task.FromResult<(IReadOnlyList<Payment>, int)>((Saved.Skip(skip).Take(take).ToList(), Saved.Count));
 
+        public Task<bool> HasApprovedPaymentsSinceAsync(Guid userId, Guid cardId, DateTimeOffset since, CancellationToken cancellationToken) =>
+            Task.FromResult(Saved.Any(payment =>
+                payment.UserId == userId
+                && payment.CardId == cardId
+                && payment.Status == PaymentStatus.Approved
+                && payment.CreatedAt >= since));
+
         public Task SaveChangesAsync(CancellationToken cancellationToken)
         {
             Saved.AddRange(_pending);
