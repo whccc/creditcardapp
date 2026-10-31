@@ -23,7 +23,6 @@ Navegador ──► Frontend (React) ──/api──► BFF (.NET 8) ──HTTP
 9. [Configuración](#9-configuración)
 10. [Pruebas](#10-pruebas)
 11. [Cómo escala](#11-cómo-escala)
-12. [Limitaciones y siguientes pasos](#12-limitaciones-y-siguientes-pasos)
 
 ---
 
@@ -642,19 +641,5 @@ cd frontend-whc-prueba-ty && npm run lint && npm run build
 
 ---
 
-## 12. Limitaciones y siguientes pasos
-
-| Tema | Situación actual | Siguiente paso |
-|---|---|---|
-| Esquema de base de datos | Se crea con `EnsureCreated`; si cambias una entidad hay que borrar `App_Data` | Migraciones de EF Core |
-| Cobro + registro del pago | No son atómicos (dos bases) | Outbox + eventos |
-| Duración de la sesión | 60 minutos, sin renovación | *Refresh tokens* renovados por el BFF |
-| Claves de la cookie en producción | Hay que persistirlas y compartirlas entre réplicas (en Docker, el volumen `bff-keys`) | Redis o un almacenamiento compartido |
-| HTTPS en Docker | Solo HTTP; sirve en `localhost` | Certificado en Nginx |
-| Firma del JWT | Simétrica (HS256), suficiente porque solo el core lo valida | Firma asimétrica con JWKS o un proveedor de identidad si otros servicios necesitan validarlo |
-| Observabilidad | Los identificadores de traza ya viajan entre BFF y core | Exportar trazas con OpenTelemetry |
-
-
----
 
 
