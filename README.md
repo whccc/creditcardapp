@@ -83,7 +83,7 @@ Hay dos formas. **Con Docker** es la más simple: un comando y listo. **En local
    docker run hello-world
    ```
 
-> **Licencia de Docker Desktop:** es gratis para uso personal, educación y empresas con menos de 250 empleados **y** menos de USD 10 millones de facturación. Si no es tu caso, existe **Rancher Desktop**, que es gratuito y usa los mismos comandos.
+
 
 #### Levantar la aplicación
 
@@ -130,7 +130,7 @@ El último borra también los volúmenes, es decir, los datos y las sesiones. En
 
 #### Configurar sin tocar archivos
 
-Copia `.env.example` a `.env` y cambia lo que necesites:
+Copia `.env.example` a `.env`:
 
 | Variable | Para qué | Por defecto |
 |---|---|---|
@@ -654,24 +654,8 @@ cd frontend-whc-prueba-ty && npm run lint && npm run build
 | HTTPS en Docker | Solo HTTP; sirve en `localhost` | Certificado en Nginx |
 | Firma del JWT | Simétrica (HS256), suficiente porque solo el core lo valida | Firma asimétrica con JWKS o un proveedor de identidad si otros servicios necesitan validarlo |
 | Observabilidad | Los identificadores de traza ya viajan entre BFF y core | Exportar trazas con OpenTelemetry |
-| Versiones | React Router v6 tiene un aviso de seguridad moderado sin parche en esa rama (la redirección post-login ya está saneada); TypeScript 6.0 porque `typescript-eslint` aún no soporta la 7 | Migrar a React Router 7 y TypeScript 7 cuando sea posible |
-| Moneda | Una sola por instalación | Multimoneda |
+
 
 ---
 
-## 13. Glosario
 
-| Término | Significado |
-|---|---|
-| **BFF** (*Backend For Frontend*) | Backend dedicado a un frontend concreto: le entrega exactamente lo que su pantalla necesita y protege el acceso al resto del sistema |
-| **Monolito modular** | Una sola aplicación desplegable, dividida internamente en módulos independientes con fronteras claras |
-| **Arquitectura hexagonal** | El negocio está en el centro y se comunica con el exterior (base de datos, HTTP) solo a través de interfaces. Así se puede cambiar la tecnología sin tocar las reglas |
-| **Puerto** | Una interfaz: lo que un módulo ofrece (de entrada, como `ICreateCardUseCase`) o lo que necesita (de salida, como `ICardRepository`) |
-| **Adaptador** | La implementación concreta de un puerto, por ejemplo `CardRepository` con EF Core |
-| **Caso de uso** | Una operación del negocio, por ejemplo "crear tarjeta" o "procesar pago" |
-| **JWT** | Token firmado que identifica al usuario. Lo emite el core |
-| **Token handler** | Patrón en el que el BFF guarda el token y el navegador solo recibe una cookie que JavaScript no puede leer |
-| **CSRF** | Ataque en el que otro sitio intenta usar tu sesión. Se evita con `SameSite` y el header `X-CSRF` |
-| **ProblemDetails** | Formato estándar (RFC 7807) para responder errores en JSON |
-| **Luhn** | Algoritmo que detecta números de tarjeta mal escritos |
-| **Seed** | Datos de ejemplo que se cargan al iniciar |
