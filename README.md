@@ -2,7 +2,7 @@
 
 Aplicación web para gestionar tarjetas de crédito: iniciar sesión, registrar y administrar tarjetas, pagar con ellas y revisar el historial de pagos.
 
-Está construida como lo haría un equipo en un entorno real: un **frontend** en React, un **BFF** (*Backend For Frontend*) que atiende a ese frontend, y un **backend core** que contiene las reglas de negocio. Las tres partes viven en este repositorio y se despliegan por separado.
+Está construida en tres partes: un **frontend** en React, un **BFF** (*Backend For Frontend*) que atiende a ese frontend, y un **backend core** que contiene las reglas de negocio. Las tres partes viven en este repositorio y se despliegan por separado.
 
 ```
 Navegador ──► Frontend (React) ──/api──► BFF (.NET 8) ──HTTP + JWT──► Backend core (.NET 8) ──► SQLite
@@ -47,7 +47,7 @@ Al iniciar se crean **datos de demostración**:
   - Mastercard `5555 5555 5555 4444` (queda **bloqueada**)
   - American Express `3782 822463 10005`
 - **Pagos:** 7 de ejemplo, uno de ellos **rechazado** por cupo insuficiente.
-- Las 3 tarjetas de demo tienen pagos aprobados recién creados, así que **no se pueden eliminar** durante 30 días. Para probar la eliminación, crea una tarjeta nueva.
+- Las 3 tarjetas de demo tienen pagos aprobados recién creados, así que **no se pueden eliminar** durante 30 días. Para probar la eliminación se debe crear una tarjeta nueva.
 
 ---
 
@@ -59,13 +59,11 @@ Hay dos formas. **Con Docker** es la más simple: un comando y listo. **En local
 
 #### Qué instalar (una sola vez, en Windows)
 
-1. **WSL 2**, el subsistema de Linux sobre el que corre Docker. Abre **PowerShell como administrador**:
+1. **WSL 2**, el subsistema de Linux sobre el que corre Docker. Desde **PowerShell como administrador**:
 
    ```bash
    wsl --install
    ```
-
-   Reinicia el equipo cuando termine.
 
 2. **Docker Desktop**, desde [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/) (versión *Windows – AMD64*) o con:
 
@@ -73,15 +71,11 @@ Hay dos formas. **Con Docker** es la más simple: un comando y listo. **En local
    winget install -e --id Docker.DockerDesktop
    ```
 
-   Durante la instalación deja marcado **"Use WSL 2 instead of Hyper-V"**.
-
-3. Abre Docker Desktop y espera a que diga **"Engine running"**. Para comprobarlo:
+3. Abrir Docker Desktop y esperar a que indique **"Engine running"**. Para comprobarlo:
 
    ```bash
    docker run hello-world
    ```
-
-
 
 #### Levantar la aplicación
 
@@ -91,13 +85,11 @@ Desde la raíz de este repositorio:
 docker compose up --build
 ```
 
-Abre **http://localhost:8080** e ingresa con el usuario demo.
-
-La primera vez tarda unos minutos, porque descarga imágenes y compila. Si apenas arranca aparece "Servicio no disponible", espera unos segundos: el core está creando las bases de datos y los datos demo.
+Abrir **http://localhost:8080** e ingresar con el usuario demo.
 
 #### Qué levanta Docker
 
-| Contenedor | Rol | ¿Accesible desde tu equipo? |
+| Contenedor | Rol | ¿Accesible desde el equipo local? |
 |---|---|---|
 | `frontend` | Nginx: sirve la aplicación y reenvía `/api` al BFF | **Sí**, en `localhost:8080` |
 | `bff` | El BFF | No. Solo lo llama Nginx |
@@ -128,24 +120,24 @@ El último borra también los volúmenes, es decir, los datos y las sesiones. En
 
 #### Configurar sin tocar archivos
 
-Copia `.env.example` a `.env`:
+Copiar `.env.example` a `.env` y ajustar los valores necesarios:
 
 | Variable | Para qué | Por defecto |
 |---|---|---|
 | `APP_PORT` | Puerto en el navegador | `8080` |
-| `JWT_SIGNING_KEY` | Clave con que el core firma los tokens (32 caracteres o más) | Una clave de demo. **Cámbiala fuera de tu equipo** |
+| `JWT_SIGNING_KEY` | Clave con que el core firma los tokens (32 caracteres o más) | Una clave de demo. **Debe cambiarse fuera del entorno local** |
 | `DEMO_DATA_ENABLED` | Crear el usuario y los datos demo | `true` |
 
 #### Limitaciones del entorno Docker
 
-- **Entra siempre por `http://localhost`.** La cookie de sesión es `Secure`, y sin HTTPS los navegadores solo la aceptan en `localhost`. Desde otra máquina o por IP, el login respondería bien pero la sesión no se guardaría. Para eso habría que agregar HTTPS en Nginx.
-- **No hay Swagger**, porque solo se publica en modo `Development`. Para explorar las APIs usa la ejecución local.
+- **El acceso debe ser siempre por `http://localhost`.** La cookie de sesión es `Secure`, y sin HTTPS los navegadores solo la aceptan en `localhost`. Desde otra máquina o por IP, el login respondería bien pero la sesión no se guardaría. Para eso habría que agregar HTTPS en Nginx.
+- **No hay Swagger**, porque solo se publica en modo `Development`. Para explorar las APIs se recomienda la ejecución local.
 
 ### 2.2 En local (sin Docker)
 
 Requisitos: **.NET SDK 8** o superior y **Node.js** `^20.19.0` o `>=22.12.0`.
 
-Abre tres terminales, en este orden:
+Abrir tres terminales y ejecutar, en este orden:
 
 ```bash
 cd backend-whc-prueba-ty && dotnet run --project src/Api/CreditCardApp.Api --launch-profile http
@@ -165,12 +157,12 @@ cd frontend-whc-prueba-ty && npm install && npm run dev
 | BFF + Swagger | http://localhost:5080/swagger |
 | Backend core + Swagger | http://localhost:5100/swagger |
 
-- **Reiniciar los datos:** detén el core, borra la carpeta `backend-whc-prueba-ty/src/Api/CreditCardApp.Api/App_Data/` y vuelve a ejecutarlo.
-- **Si aparece "address already in use":** otro proceso está usando el puerto, por ejemplo una ejecución anterior que quedó abierta. Ciérralo o búscalo con `Get-NetTCPConnection -LocalPort 5080 -State Listen` en PowerShell.
+- **Reiniciar los datos:** detener el core, borrar la carpeta `backend-whc-prueba-ty/src/Api/CreditCardApp.Api/App_Data/` y volver a ejecutarlo.
+- **Si aparece "address already in use":** otro proceso está usando el puerto, por ejemplo una ejecución anterior que quedó abierta. Se puede cerrar ese proceso o identificarlo con `Get-NetTCPConnection -LocalPort 5080 -State Listen` en PowerShell.
 
 ### 2.3 Probar las APIs a mano
 
-- **Swagger del BFF:** primero pulsa **Authorize** y escribe `1` (es el header anti-CSRF `X-CSRF`). Después ejecuta `POST /api/v1/auth/login`; el navegador guarda la cookie de sesión solo.
+- **Swagger del BFF:** primero pulsar **Authorize** e ingresar `1` (es el header anti-CSRF `X-CSRF`). Después ejecutar `POST /api/v1/auth/login`; el navegador guarda la cookie de sesión automáticamente.
 - **Archivos `requests.http`** con todo el recorrido (login, tarjetas, pagos, errores). Funcionan con la extensión *REST Client* de VS Code, con Visual Studio 2022 (17.12+) y con Rider:
   - [`bff-whc-prueba-ty/src/CreditCardApp.Bff.WebApi/requests.http`](bff-whc-prueba-ty/src/CreditCardApp.Bff.WebApi/requests.http): lo que consume el frontend.
   - [`backend-whc-prueba-ty/src/Api/CreditCardApp.Api/requests.http`](backend-whc-prueba-ty/src/Api/CreditCardApp.Api/requests.http): la API del core.
